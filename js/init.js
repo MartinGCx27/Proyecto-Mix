@@ -35,22 +35,36 @@ function randomizeMix() {
     let temp_arr = [];
     let rand_index;
     let rand_quantity;
-    for (let i = 0; i < DIVISIONS.length; i++) {
-        temp_arr = [];
-        rand_index = i;
-        rand_quantity = randomIntFromInterval(min, max);
-        while (temp_arr.length < rand_quantity) {
-            while (rand_index === i) {
+    if ((min === 1) && (min === max)) {
+        let assigned = [];
+        rand_index = 0;
+        for (let i = 0; i < DIVISIONS.length; i++) {
+            temp_arr = [];
+            while (rand_index === i || assigned.includes(DIVISIONS[rand_index])) {
                 rand_index = Math.floor(Math.random() * 8);
             }
-            if (Math.floor(Math.random() * 2) === 1) {
-                if (isValueInArray(temp_arr, DIVISIONS[rand_index]) === -1) {
-                    temp_arr.push(DIVISIONS[rand_index]);
-                }
-                rand_index = i;
-            }
+            temp_arr.push(DIVISIONS[rand_index]);
+            assigned.push(DIVISIONS[rand_index]);
+            MIX_DIV_INPUTS_ARR[i].selectpicker("val", temp_arr);
         }
-        MIX_DIV_INPUTS_ARR[i].selectpicker("val", temp_arr);
+    } else {
+        for (let i = 0; i < DIVISIONS.length; i++) {
+            temp_arr = [];
+            rand_index = i;
+            rand_quantity = randomIntFromInterval(min, max);
+            while (temp_arr.length < rand_quantity) {
+                while (rand_index === i) {
+                    rand_index = Math.floor(Math.random() * 8);
+                }
+                if (Math.floor(Math.random() * 2) === 1) {
+                    if (isValueInArray(temp_arr, DIVISIONS[rand_index]) === -1) {
+                        temp_arr.push(DIVISIONS[rand_index]);
+                    }
+                    rand_index = i;
+                }
+            }
+            MIX_DIV_INPUTS_ARR[i].selectpicker("val", temp_arr);
+        }
     }
 }
 
@@ -99,15 +113,17 @@ function generateMonthArrayAndHeader() {
             ) {
                 // Manually blocked day handling for vulnerability
                 if (month_headers[j - 3].split("-").pop() === "d") {
-                    if (vacations_data[i][0] === "NO") {
-                        month_array[i].push(month_headers[j - 3].split("-").pop());
-                    } else if (vacations_data[i][0] === "SI") {
-                        month_array[i].push("f");
-                    }
-                } else {
-                    // day assignation
-                    if (month_headers[j - 3].split("-").pop() === "f") {
-                        if (isNumeric(vacations_data[i][j])) {
+                    if (isNumeric(vacations_data[i][j])) {
+                        if (first_month_done) {
+                            let index = isValueInArray(cr_general_resp, parseInt(vacations_data[i][j]), 0);
+                            if (index !== -1) {
+                                let temp_div = DIVISIONS_CODE[cr_general_resp[index][1]];
+                                month_array[i].push(vacations_data[i][j] + "_" + temp_div);
+                            } else {
+                                temp_arr.push(vacations_data[i][j]);
+                                month_array[i].push(vacations_data[i][j]);
+                            }
+                        } else {
                             presential_count++;
                             let index = isValueInArray(cr_general, parseInt(vacations_data[i][j]), 0);
                             if (index !== -1) {
@@ -117,6 +133,37 @@ function generateMonthArrayAndHeader() {
                             } else {
                                 temp_arr.push(vacations_data[i][j]);
                                 month_array[i].push(vacations_data[i][j]);
+                            }
+                        }
+                    } else if (vacations_data[i][0] === "NO") {
+                        month_array[i].push(month_headers[j - 3].split("-").pop());
+                    } else if (vacations_data[i][0] === "SI") {
+                        month_array[i].push("f");
+                    }
+                } else {
+                    // day assignation
+                    if (month_headers[j - 3].split("-").pop() === "f") {
+                        if (isNumeric(vacations_data[i][j])) {
+                            if (first_month_done) {
+                                let index = isValueInArray(cr_general_resp, parseInt(vacations_data[i][j]), 0);
+                                if (index !== -1) {
+                                    let temp_div = DIVISIONS_CODE[cr_general_resp[index][1]];
+                                    month_array[i].push(vacations_data[i][j] + "_" + temp_div);
+                                } else {
+                                    temp_arr.push(vacations_data[i][j]);
+                                    month_array[i].push(vacations_data[i][j]);
+                                }
+                            } else {
+                                presential_count++;
+                                let index = isValueInArray(cr_general, parseInt(vacations_data[i][j]), 0);
+                                if (index !== -1) {
+                                    let temp_div = DIVISIONS_CODE[cr_general[index][1]];
+                                    month_array[i].push(vacations_data[i][j] + "_" + temp_div);
+                                    deleteByIndexFromArray(cr_general, index);
+                                } else {
+                                    temp_arr.push(vacations_data[i][j]);
+                                    month_array[i].push(vacations_data[i][j]);
+                                }
                             }
                         } else {
                             month_array[i].push(month_headers[j - 3].split("-").pop());
@@ -135,6 +182,9 @@ function generateMonthArrayAndHeader() {
     month_array = month_array.sort((arr1, arr2) => {
         return arr1[0] > arr2[0] ? 1 : -1;
     });
+    if (!first_month_done) {
+        first_month_done = true;
+    }
 }
 
 function calculateCapacityByDivision() {
@@ -201,6 +251,7 @@ function generateTableData() {
 
 function createTable() {
     table = new Tabulator("#table", {
+        locale: true,
         resizableColumns: false,
         headerSort: false,
         data: table_data,
@@ -818,7 +869,7 @@ function generateStatistics() {
 }
 
 function schedule() {
-    // generateMonthArrayAndHeader();
+    generateMonthArrayAndHeader();
     calculateCapacityByDivision();
     calculateCapacityAccordinToMix();
     fillRemoteAndLocal();
@@ -829,7 +880,7 @@ function schedule() {
     downloadCalendar();
 }
 // TEST
-MIX_PERCENT_INPUT.value = 50;
+// MIX_PERCENT_INPUT.value = 50;
 // DISABLED_DAYS_INPUT.value = "28 20 15 5";
 // END OF TEST
 
@@ -842,18 +893,20 @@ START_BTN.addEventListener("click", () => {
             alert("ERROR: Porcentaje para mix incorrecto.");
             return false;
         }
-        // Verificar días inhabilitados
+        // Días deshabilitados
         if (DISABLED_DAYS_INPUT.value.length > 0) {
             disabled_days = DISABLED_DAYS_INPUT.value.split(" ");
             for (let i = 0; i < disabled_days.length; i++) {
                 disabled_days[i] = parseInt(disabled_days[i]);
                 if (disabled_days[i] <= 0) {
+                    VACATIONS_INPUT.value = "";
                     alert(
                         "ERROR: Fecha de presencial elegida incorrecta, verifique por favor."
                     );
                     return false;
                 }
                 if (disabled_days[i] > getNumberOFDaysByMonth(year, month)) {
+                    VACATIONS_INPUT.value = "";
                     alert(
                         "ERROR: El número de días del mes seleccionado es menor a una fecha de presencial elegida."
                     );

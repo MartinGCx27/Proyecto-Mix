@@ -52,13 +52,16 @@ const DIVISIONS_CODE = {
     SUR: 6,
     SURESTE: 7
 };
+let no_cert_loaded = false;
+let priority_loaded = false;
+let local_loaded = false;
 
 // FUNCTIONS
 function isAllSet() {
     if (cr_general.length <= 0) {
         alert("ERROR: Carga la base de datos de CRs");
         return false;
-    } else if (cr_local.length <= 0) {
+    } else if (!local_loaded) {
         alert("ERROR: Carga la lista de CRs locales");
         return false;
     } else if (vacations_data.length <= 0) {
@@ -79,6 +82,7 @@ function resetInputs() {
 
 // GLOBAL VARIABLES
 let cr_general = [];
+let cr_general_resp = [];
 let cr_prio = [];
 let cr_no_cert = [];
 let cr_local = [];
@@ -96,6 +100,7 @@ let year;
 let month;
 let is_rand_toggled = false;
 let table;
+let first_month_done = false;
 // Mix assignation
 let bajio_mix = [];
 let mtronorte_mix = [];
@@ -125,9 +130,9 @@ year = parseInt(MIX_MONTH.value.split("-")[0]);
 month = parseInt(MIX_MONTH.value.split("-").pop());
 
 // TEST
-MIX_MONTH.value = "2021-06";
-year = parseInt(MIX_MONTH.value.split("-")[0]);
-month = parseInt(MIX_MONTH.value.split("-").pop());
+// MIX_MONTH.value = "2021-06";
+// year = parseInt(MIX_MONTH.value.split("-")[0]);
+// month = parseInt(MIX_MONTH.value.split("-").pop());
 // TEST
 
 // EVENT LISTENERS FOR EACH INPUT
@@ -164,6 +169,9 @@ CR_DB_INPUT.addEventListener("change", () => {
                     console.log("**********************************");
                     // TEST
                     document.getElementById("span0").className = "show";
+                    cr_general_resp = cr_general.map(function (arr) {
+                        return arr.slice();
+                    });
                     // alert("SUCCESS!");
                 } else {
                     cr_general = [];
@@ -207,7 +215,8 @@ CR_NO_CERT_INPUT.addEventListener("change", () => {
                         console.log("CR GENERAL DESPUES DE NO VISITA: ", cr_general.length);
                         console.log("NO VISITA: ", cr_no_cert.length);
                         console.log("**********************************");
-                        // TEST
+                        // TEST`
+                        no_cert_loaded = true;
                         document.getElementById("span2").className = "show";
                         // alert("SUCCESS!");
                     } else {
@@ -232,7 +241,7 @@ CR_PRIORITY_INPUT.addEventListener("change", () => {
         Papa.parse(CR_PRIORITY_INPUT.files[0], {
             complete: (parsed_doc) => {
                 let temp_data = parsed_doc.data;
-                if (cr_no_cert.length > 0) {
+                if (no_cert_loaded) {
                     if (temp_data[0].length === 3) {
                         cr_prio = [];
                         for (let i = 1; i < temp_data.length; i++) {
@@ -242,6 +251,11 @@ CR_PRIORITY_INPUT.addEventListener("change", () => {
                         }
                         for (let i = 0; i < cr_prio.length; i++) {
                             cr_prio[i][0] = parseInt(cr_prio[i][0]);
+                        }
+                        for (let i = 0; i < cr_prio.length; i++) {
+                            if (cr_prio[i][1].includes("REGIONAL")) {
+                                cr_prio[i][1] = cr_prio[i][1].split(" ")[1];
+                            }
                         }
                         let temp_arr = [];
                         for (let i = 0; i < cr_prio.length; i++) {
@@ -275,6 +289,7 @@ CR_PRIORITY_INPUT.addEventListener("change", () => {
                         console.log("PRIO POST: ", cr_prio.length);
                         console.log("**********************************");
                         // TEST
+                        priority_loaded = true;
                         document.getElementById("span3").className = "show";
                         // alert("SUCCESS!");
                     } else {
@@ -299,7 +314,7 @@ CR_LOCAL_INPUT.addEventListener("change", () => {
         Papa.parse(CR_LOCAL_INPUT.files[0], {
             complete: (parsed_doc) => {
                 let temp_data = parsed_doc.data;
-                if (cr_prio.length > 0) {
+                if (priority_loaded) {
                     if (temp_data[0].length === 3) {
                         cr_local = [];
                         for (let i = 1; i < temp_data.length; i++) {
@@ -309,6 +324,11 @@ CR_LOCAL_INPUT.addEventListener("change", () => {
                         }
                         for (let i = 0; i < cr_local.length; i++) {
                             cr_local[i][0] = parseInt(cr_local[i][0]);
+                        }
+                        for (let i = 0; i < cr_local.length; i++) {
+                            if (cr_local[i][1].includes("REGIONAL")) {
+                                cr_local[i][1] = cr_local[i][1].split(" ")[1];
+                            }
                         }
                         let temp_arr = [];
                         for (let i = 0; i < cr_local.length; i++) {
@@ -342,6 +362,7 @@ CR_LOCAL_INPUT.addEventListener("change", () => {
                         console.log("LOCAL POST: ", cr_local.length);
                         console.log("**********************************");
                         // TEST
+                        local_loaded = true;
                         document.getElementById("span4").className = "show";
                         // alert("SUCCESS!");
                     } else {
@@ -367,7 +388,31 @@ VACATIONS_INPUT.addEventListener("change", () => {
         let month = parseInt(MIX_MONTH.value.split("-").pop());
         let month_days = getNumberOFDaysByMonth(year, month);
         Papa.parse(VACATIONS_INPUT.files[0], {
+            encoding: "ISO-8859-1",
+
             complete: (parsed_doc) => {
+                // Verificar días inhabilitados
+                // if (DISABLED_DAYS_INPUT.value.length > 0) {  
+                //     disabled_days = DISABLED_DAYS_INPUT.value.split(" ");
+                //     for (let i = 0; i < disabled_days.length; i++) {
+                //         disabled_days[i] = parseInt(disabled_days[i]);
+                //         if (disabled_days[i] <= 0) {
+                //             VACATIONS_INPUT.value = "";
+                //             alert(
+                //                 "ERROR: Fecha de presencial elegida incorrecta, verifique por favor."
+                //             );
+                //             return false;
+                //         }
+                //         if (disabled_days[i] > getNumberOFDaysByMonth(year, month)) {
+                //             VACATIONS_INPUT.value = "";
+                //             alert(
+                //                 "ERROR: El número de días del mes seleccionado es menor a una fecha de presencial elegida."
+                //             );
+                //             return false;
+                //         }
+                //     }
+                // }
+
                 let temp_data = parsed_doc.data;
                 if (cr_general.length > 0) {
                     if (temp_data[0].length === month_days + 5) {
