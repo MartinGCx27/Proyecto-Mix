@@ -185,7 +185,7 @@ body {
 	background-color: var(--main-accent-color);
 	color: var(--main-color-text);
 	border: none;
-	margin-top: 1.5rem;
+	margin-top: 2.3rem;
 }
 .generate-btn:hover {
 	background-color: var(--main-accent-hover);
@@ -223,7 +223,7 @@ td {
 	margin-bottom: 1.5rem;
 }
 #mix-percent-input {
-	margin-bottom: 1.5rem;
+	margin-bottom: 1rem;
 }
 .svg-24 {
 	width: 24px;
@@ -233,4 +233,7 @@ td {
 }
 .show {
 	display: block !important;
+}
+#disabled-days-input {
+	margin-bottom: 1.5rem;
 }
